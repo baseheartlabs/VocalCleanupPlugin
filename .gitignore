@@ -1,0 +1,25 @@
+# Build artifacts
+build/
+cmake-build-*/
+.cache/
+
+# IDE files
+.vscode/
+.idea/
+*.xcodeproj/
+*.xcworkspace/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Compiled plugin binaries
+*.vst3/
+*.component/
+*.aaxplugin/
+
+# CMake generated
+CMakeFiles/
+CMakeCache.txt
+Makefile
+cmake_install.cmake
