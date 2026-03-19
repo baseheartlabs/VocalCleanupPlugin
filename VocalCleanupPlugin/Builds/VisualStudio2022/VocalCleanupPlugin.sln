@@ -1,0 +1,46 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio Version 17
+
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "VocalCleanupPlugin - Standalone Plugin", "VocalCleanupPlugin_StandalonePlugin.vcxproj", "{B51FB8EF-C8EA-BE64-3DED-E01F57F3A5F3}"
+	ProjectSection(ProjectDependencies) = postProject
+		{F95B16C0-7478-7160-158E-926576DBC012} = {F95B16C0-7478-7160-158E-926576DBC012}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "VocalCleanupPlugin - VST3", "VocalCleanupPlugin_VST3.vcxproj", "{EBB4B699-8BF6-E616-3DB0-841890AEAF5D}"
+	ProjectSection(ProjectDependencies) = postProject
+		{F95B16C0-7478-7160-158E-926576DBC012} = {F95B16C0-7478-7160-158E-926576DBC012}
+		{F197C490-2786-6E56-5834-719F9B902826} = {F197C490-2786-6E56-5834-719F9B902826}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "VocalCleanupPlugin - Shared Code", "VocalCleanupPlugin_SharedCode.vcxproj", "{F95B16C0-7478-7160-158E-926576DBC012}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "VocalCleanupPlugin - VST3 Manifest Helper", "VocalCleanupPlugin_VST3ManifestHelper.vcxproj", "{F197C490-2786-6E56-5834-719F9B902826}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x64 = Debug|x64
+		Release|x64 = Release|x64
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{EBB4B699-8BF6-E616-3DB0-841890AEAF5D}.Debug|x64.ActiveCfg = Debug|x64
+		{EBB4B699-8BF6-E616-3DB0-841890AEAF5D}.Debug|x64.Build.0 = Debug|x64
+		{EBB4B699-8BF6-E616-3DB0-841890AEAF5D}.Release|x64.ActiveCfg = Release|x64
+		{EBB4B699-8BF6-E616-3DB0-841890AEAF5D}.Release|x64.Build.0 = Release|x64
+		{B51FB8EF-C8EA-BE64-3DED-E01F57F3A5F3}.Debug|x64.ActiveCfg = Debug|x64
+		{B51FB8EF-C8EA-BE64-3DED-E01F57F3A5F3}.Debug|x64.Build.0 = Debug|x64
+		{B51FB8EF-C8EA-BE64-3DED-E01F57F3A5F3}.Release|x64.ActiveCfg = Release|x64
+		{B51FB8EF-C8EA-BE64-3DED-E01F57F3A5F3}.Release|x64.Build.0 = Release|x64
+		{F95B16C0-7478-7160-158E-926576DBC012}.Debug|x64.ActiveCfg = Debug|x64
+		{F95B16C0-7478-7160-158E-926576DBC012}.Debug|x64.Build.0 = Debug|x64
+		{F95B16C0-7478-7160-158E-926576DBC012}.Release|x64.ActiveCfg = Release|x64
+		{F95B16C0-7478-7160-158E-926576DBC012}.Release|x64.Build.0 = Release|x64
+		{F197C490-2786-6E56-5834-719F9B902826}.Debug|x64.ActiveCfg = Debug|x64
+		{F197C490-2786-6E56-5834-719F9B902826}.Debug|x64.Build.0 = Debug|x64
+		{F197C490-2786-6E56-5834-719F9B902826}.Release|x64.ActiveCfg = Release|x64
+		{F197C490-2786-6E56-5834-719F9B902826}.Release|x64.Build.0 = Release|x64
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
