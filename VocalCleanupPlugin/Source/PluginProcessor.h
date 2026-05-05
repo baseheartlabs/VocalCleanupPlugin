@@ -49,21 +49,27 @@ public:
     void getStateInformation (juce::MemoryBlock& destData) override;
     void setStateInformation (const void* data, int sizeInBytes) override;
     #pragma endregion
-private:
+
     // Declare member variables here
 	double currentSampleRate = 44100.0; // Default sample rate, will be updated in prepareToPlay
 
 	float currentGain = 0.0f; // Current gain value, will be updated in processBlock
 
-	float thresholdLinear = 0.01f; // Threshold for vocal cleanup (linear scale, ~-40dB)
+	// Parameter management
+    juce::AudioProcessorValueTreeState parameterManager; // Manages parameters
 
-	float floorGain = 0.0f; // Floor gain to prevent complete silence (can be set to a small value like 0.001f)
+    std::atomic<float>* thresholdDB = nullptr; // Pointer to threshold parameter (in dB)
+    float thresholdLinear = 0.01f; // Threshold for vocal cleanup (linear scale, ~-40dB)
 
-	float attackCoeff = 0.0f; // Attack coefficient for smoothing gain changes
+	// Parameters not exposed for tuning 
+	int hangOverDurationSamples = static_cast<int>(44100.0 * 0.1); // Duration of hangover in samples (e.g., 100ms at 44.1kHz = 4410 samples)
 
-	float releaseCoeff = 0.0f; // Release coefficient for smoothing gain changes
+    std::atomic<bool> isVoiceDetected{ false }; // NOT input parameter - updated in processBlock based on RMS level and threshold comparison
 
-    float calculateCoefficient(float timeInMs, double sampleRate);
+    // Helper: Setup parameters
+    juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout();
+
+private:
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (VocalCleanupPluginAudioProcessor)
 };

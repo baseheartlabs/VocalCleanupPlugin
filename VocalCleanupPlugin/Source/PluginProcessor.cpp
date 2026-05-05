@@ -19,9 +19,14 @@ VocalCleanupPluginAudioProcessor::VocalCleanupPluginAudioProcessor()
                       #endif
                        .withOutput ("Output", juce::AudioChannelSet::stereo(), true)
                      #endif
-                       )
+                       ),
+#else
+    :
 #endif
+
+parameterManager(*this, nullptr, juce::Identifier("VocalCleanup"), createParameterLayout())
 {
+	thresholdDB = parameterManager.getRawParameterValue("threshold");
 }
 
 VocalCleanupPluginAudioProcessor::~VocalCleanupPluginAudioProcessor()
@@ -29,6 +34,20 @@ VocalCleanupPluginAudioProcessor::~VocalCleanupPluginAudioProcessor()
 }
 
 #pragma endregion
+
+juce::AudioProcessorValueTreeState::ParameterLayout VocalCleanupPluginAudioProcessor::createParameterLayout()
+{
+    std::vector<std::unique_ptr<juce::RangedAudioParameter>> params;
+
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(
+        "threshold",
+        "Threshold",
+        juce::NormalisableRange<float>(-60.0f, 0.0f, 0.1f),
+        -12.0f
+    ));
+
+    return { params.begin(), params.end() };
+}
 
 #pragma region JUCE Boilerplate Implementation
 const juce::String VocalCleanupPluginAudioProcessor::getName() const
@@ -97,16 +116,9 @@ void VocalCleanupPluginAudioProcessor::changeProgramName (int index, const juce:
 
 void VocalCleanupPluginAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
-	currentSampleRate = sampleRate;
+    currentSampleRate = sampleRate;
+    hangOverDurationSamples = static_cast<int>(sampleRate * 0.1);
 
-    // Reset state
-    currentGain = floorGain;
-
-    // Pre-calculate coefficients
-    // Reference: 1-3ms attack prevents clipping consonants
-	// 100-300ms release allows natural decay of sustained notes
-    attackCoeff = calculateCoefficient(2.0f, sampleRate); // 3ms attack
-	releaseCoeff = calculateCoefficient(150.0f, sampleRate); // 200ms release
 }
 
 void VocalCleanupPluginAudioProcessor::releaseResources()
@@ -143,19 +155,51 @@ bool VocalCleanupPluginAudioProcessor::isBusesLayoutSupported (const BusesLayout
 
 void VocalCleanupPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
 {
-    // CRITICAL: No memory allocation (new/malloc), no UI calls, and no locks in this method!
 
     juce::ScopedNoDenormals noDenormals;  // Prevents CPU spikes from tiny floating point numbers
-    auto totalNumInputChannels  = getTotalNumInputChannels();
+    auto totalNumInputChannels = getTotalNumInputChannels();
     auto totalNumOutputChannels = getTotalNumOutputChannels();
 
     // Clear any output channels that don't contain input data.
     // Ex. If you have 2 inputs and 4 outputs, this silences outputs 3 and 4 to prevent garbage noise.
     for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
-        buffer.clear (i, 0, buffer.getNumSamples());
+        buffer.clear(i, 0, buffer.getNumSamples());
+
+    // CRITICAL: No memory allocation (new/malloc), no UI calls, and no locks in this method!
+    
+	// Grab updated pointer values for parameters
+    float currentDb = thresholdDB->load();
+
+	// Perform conversions and calculations for processing
+	thresholdLinear = juce::Decibels::decibelsToGain(currentDb);
+
+    /// Calculate RMS
+    float rms = 0.0f;  // Local variable
+    for (int channel = 0; channel < buffer.getNumChannels(); ++channel)
+    {
+        float channelRms = buffer.getRMSLevel(channel, 0, buffer.getNumSamples());
+        rms = std::max(rms, channelRms);  // Use loudest channel
+    }
+
+    // Voice Activity Detection with Hangover
+    if (juce::Decibels::gainToDecibels(rms) > currentDb)
+    {
+		isVoiceDetected.store(true);
+		hangOverDurationSamples = static_cast<int>(currentSampleRate * 0.1); // Reset hangover duration
+    }
+    else 
+    {
+        if (hangOverDurationSamples > 0)
+        {
+            hangOverDurationSamples = std::max(0, hangOverDurationSamples - buffer.getNumSamples());
+        }
+        else 
+        {
+			isVoiceDetected.store(false);
+        }
+    }
 
 	// Main Audio Processing Loop
-    
     int numSamples = buffer.getNumSamples();
 	auto* leftChannel = buffer.getWritePointer(0);
     auto* rightChannel = totalNumInputChannels > 1 ? buffer.getWritePointer(1) : nullptr;
@@ -163,29 +207,16 @@ void VocalCleanupPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& b
     // Iterate through every sample in the buffer
     for (int sample = 0; sample < numSamples; sample++)
     {
-        //Take absolute value of left channel (or right, or mixed- can be changed)
-        float inputLevel = std::abs(leftChannel[sample]);
+        // Pass through for now
+        leftChannel[sample] = leftChannel[sample];
 
-        // Full gain above threshold, floor gain below
-		float targetGain = (inputLevel > thresholdLinear) ? 1.0f : floorGain; 
+        rightChannel[sample] = rightChannel[sample];
+    }
 
-        // Apply One-Pole Filter
-        // If target is higher than current, use Attack. If lower, use Release.
-        if (targetGain > currentGain)
-        {
-            currentGain = (attackCoeff * currentGain) + ((1.0f - attackCoeff) * targetGain);
-        }
-        else
-        {
-            currentGain = (releaseCoeff * currentGain) + ((1.0f - releaseCoeff) * targetGain);
-        }
-
-        // Apply the smoothed gain to the actual audio
-        leftChannel[sample] *= currentGain;
-        if (rightChannel != nullptr)
-        {
-            rightChannel[sample] *= currentGain;
-        }
+    if (!isVoiceDetected.load(std::memory_order_relaxed))
+    {
+        // Simple gate: mute when voice NOT detected
+        buffer.clear();
     }
 
 }
@@ -193,18 +224,6 @@ void VocalCleanupPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& b
 #pragma endregion
 
 #pragma region Custom Helper Functions
-float VocalCleanupPluginAudioProcessor::calculateCoefficient(float timeInMs, double sampleRate)
-{
-    if(timeInMs <= 0.0f) return 0.0f; // Avoid division by zero
-
-    // Convert time from milliseconds to seconds
-    float timeInSeconds = timeInMs / 1000.0f;
-
-    // Calculate the coefficient using the formula: coeff = exp(-1 / (time * sampleRate))
-    float coeff = std::exp(-1.0f / (timeInSeconds * static_cast<float>(sampleRate)));
-
-    return coeff;
-}
 
 #pragma endregion
 
@@ -217,25 +236,27 @@ bool VocalCleanupPluginAudioProcessor::hasEditor() const
 
 juce::AudioProcessorEditor* VocalCleanupPluginAudioProcessor::createEditor()
 {
-    return new VocalCleanupPluginAudioProcessorEditor (*this);
+    return new VocalCleanupPluginAudioProcessorEditor (*this, parameterManager);
 }
 
 #pragma endregion
 
 #pragma region State Information
-void VocalCleanupPluginAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
+void VocalCleanupPluginAudioProcessor::getStateInformation(juce::MemoryBlock& destData)
 {
-    // You should use this method to store your parameters in the memory block.
-    // You could do that either as raw data, or use the XML or ValueTree classes
-    // as intermediaries to make it easy to save and load complex data.
+    auto state = parameterManager.copyState();
+    std::unique_ptr<juce::XmlElement> xml(state.createXml());
+    copyXmlToBinary(*xml, destData);
 }
 
-void VocalCleanupPluginAudioProcessor::setStateInformation (const void* data, int sizeInBytes)
+void VocalCleanupPluginAudioProcessor::setStateInformation(const void* data, int sizeInBytes)
 {
-    // You should use this method to restore your parameters from this memory block,
-    // whose contents will have been created by the getStateInformation() call.
-}
+    std::unique_ptr<juce::XmlElement> xmlState(getXmlFromBinary(data, sizeInBytes));
 
+    if (xmlState.get() != nullptr)
+        if (xmlState->hasTagName(parameterManager.state.getType()))
+            parameterManager.replaceState(juce::ValueTree::fromXml(*xmlState));
+}
 #pragma endregion
 
 // This creates new instances of the plugin..
