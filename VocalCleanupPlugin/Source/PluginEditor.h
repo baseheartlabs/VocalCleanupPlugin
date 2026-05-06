@@ -10,6 +10,7 @@
 
 #include <JuceHeader.h>
 #include "PluginProcessor.h"
+#include "GateVisualizer.h"
 
 //==============================================================================
 /**
@@ -53,11 +54,10 @@ public:
     // access the processor object that created it.
     VocalCleanupPluginAudioProcessor& audioProcessor;
 	VADComponent VAD; // Custom component to visualize voice activity detection
+    GateVisualizer gateVisualizer{ audioProcessor };
 
     juce::AudioProcessorValueTreeState& valueTreeState;
-    
-    juce::Slider thresholdSlider;
-    juce::Label thresholdLabel;
+
 
 private:
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (VocalCleanupPluginAudioProcessorEditor)

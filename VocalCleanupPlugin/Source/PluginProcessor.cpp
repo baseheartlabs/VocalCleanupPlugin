@@ -26,8 +26,9 @@ VocalCleanupPluginAudioProcessor::VocalCleanupPluginAudioProcessor()
 
 parameterManager(*this, nullptr, juce::Identifier("VocalCleanup"), createParameterLayout())
 {
-	thresholdDB = parameterManager.getRawParameterValue("threshold");
 }
+
+
 
 VocalCleanupPluginAudioProcessor::~VocalCleanupPluginAudioProcessor()
 {
@@ -38,13 +39,6 @@ VocalCleanupPluginAudioProcessor::~VocalCleanupPluginAudioProcessor()
 juce::AudioProcessorValueTreeState::ParameterLayout VocalCleanupPluginAudioProcessor::createParameterLayout()
 {
     std::vector<std::unique_ptr<juce::RangedAudioParameter>> params;
-
-    params.push_back(std::make_unique<juce::AudioParameterFloat>(
-        "threshold",
-        "Threshold",
-        juce::NormalisableRange<float>(-60.0f, 0.0f, 0.1f),
-        -12.0f
-    ));
 
     return { params.begin(), params.end() };
 }
@@ -119,6 +113,10 @@ void VocalCleanupPluginAudioProcessor::prepareToPlay (double sampleRate, int sam
     currentSampleRate = sampleRate;
     hangOverDurationSamples = static_cast<int>(sampleRate * 0.1);
 
+    // TODO: Gate this to happen only on startup or when sampleRate changes
+    dropCoef = std::exp(-1.0 / (dropTimeSec * sampleRate));
+    climbCoef = std::exp(-1.0 / (climbTimeSec * sampleRate));
+
 }
 
 void VocalCleanupPluginAudioProcessor::releaseResources()
@@ -155,7 +153,6 @@ bool VocalCleanupPluginAudioProcessor::isBusesLayoutSupported (const BusesLayout
 
 void VocalCleanupPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
 {
-
     juce::ScopedNoDenormals noDenormals;  // Prevents CPU spikes from tiny floating point numbers
     auto totalNumInputChannels = getTotalNumInputChannels();
     auto totalNumOutputChannels = getTotalNumOutputChannels();
@@ -166,38 +163,59 @@ void VocalCleanupPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& b
         buffer.clear(i, 0, buffer.getNumSamples());
 
     // CRITICAL: No memory allocation (new/malloc), no UI calls, and no locks in this method!
-    
-	// Grab updated pointer values for parameters
-    float currentDb = thresholdDB->load();
 
-	// Perform conversions and calculations for processing
-	thresholdLinear = juce::Decibels::decibelsToGain(currentDb);
+    // Get the current signal level of the block
+    float blockRms = buffer.getRMSLevel(0, 0, buffer.getNumSamples());
+    float blockDb = juce::Decibels::gainToDecibels(blockRms, -100.0f); // Floor at -100dB
 
-    /// Calculate RMS
-    float rms = 0.0f;  // Local variable
-    for (int channel = 0; channel < buffer.getNumChannels(); ++channel)
+    if (blockDb < currentNoiseFloorDb)
     {
-        float channelRms = buffer.getRMSLevel(channel, 0, buffer.getNumSamples());
-        rms = std::max(rms, channelRms);  // Use loudest channel
+        // Signal is QUIETER than the floor. Drop quickly to track it.
+        // Formula: Output = Input + Coef * (OldOutput - Input)
+        currentNoiseFloorDb = blockDb + dropCoef * (currentNoiseFloorDb - blockDb);
+    }
+    else
+    {
+        // Signal is LOUDER than the floor. Climb very slowly.
+        // This prevents loud speech from pulling the noise floor up instantly.
+        currentNoiseFloorDb = blockDb + climbCoef * (currentNoiseFloorDb - blockDb);
     }
 
-    // Voice Activity Detection with Hangover
-    if (juce::Decibels::gainToDecibels(rms) > currentDb)
+    // Set the active operational threshold for your VAD
+    activeThresholdDb = currentNoiseFloorDb + thresholdOffsetDb;
+
+    // State Handling
+    if (blockDb > activeThresholdDb) 
     {
-		isVoiceDetected.store(true);
-		hangOverDurationSamples = static_cast<int>(currentSampleRate * 0.1); // Reset hangover duration
+        isVoiceDetected.store(true);
+        hangOverDurationSamples = static_cast<int>(currentSampleRate * 0.1); // Reset hangover duration
     }
-    else 
+    else
     {
         if (hangOverDurationSamples > 0)
         {
             hangOverDurationSamples = std::max(0, hangOverDurationSamples - buffer.getNumSamples());
         }
-        else 
+        else
         {
-			isVoiceDetected.store(false);
+            isVoiceDetected.store(false);
         }
     }
+
+    // Live View Support
+    // Grab the current write position
+        int currentIndex = writeIndex.load();
+
+    // Write the frame data
+    visualBuffer[currentIndex] = {
+        blockDb,
+        currentNoiseFloorDb,
+        activeThresholdDb,
+        isVoiceDetected // true if signalDb > activeThresholdDb
+    };
+
+    // 3. Advance the index, wrapping back to 0 if it hits the end
+    writeIndex.store((currentIndex + 1) % bufferSize);
 
 	// Main Audio Processing Loop
     int numSamples = buffer.getNumSamples();

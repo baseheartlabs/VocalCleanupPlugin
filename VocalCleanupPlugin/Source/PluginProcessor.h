@@ -58,13 +58,33 @@ public:
 	// Parameter management
     juce::AudioProcessorValueTreeState parameterManager; // Manages parameters
 
-    std::atomic<float>* thresholdDB = nullptr; // Pointer to threshold parameter (in dB)
-    float thresholdLinear = 0.01f; // Threshold for vocal cleanup (linear scale, ~-40dB)
-
 	// Parameters not exposed for tuning 
 	int hangOverDurationSamples = static_cast<int>(44100.0 * 0.1); // Duration of hangover in samples (e.g., 100ms at 44.1kHz = 4410 samples)
 
     std::atomic<bool> isVoiceDetected{ false }; // NOT input parameter - updated in processBlock based on RMS level and threshold comparison
+
+    // Active Noise Floor Tracking
+    float currentNoiseFloorDb = -80.0f; // Start very low
+    float activeThresholdDb = -80.0f;   // The actual gate threshold
+    float thresholdOffsetDb = 12.0f;    // How many dB above the noise floor the gate opens - could be exposed as "sensitivity"?
+    float dropTimeSec = 0.05f; // Should drop to find noise quickly
+    float climbTimeSec = 3.0f; // Should climb slowly to ignore speech (Asymmetric)
+    float dropCoef = 0.0f; // Updated when sample rate changes
+    float climbCoef = 0.0f; // Updated when sample rate changes
+
+    // Visualizer
+    // A struct to hold one "pixel column" of data
+    struct VisualFrame {
+        float signalDb;
+        float noiseFloorDb;
+        float activeThresholdDb;
+        bool isGateOpen;
+    };
+
+    // Circular Buffer
+    static constexpr int bufferSize = 2048; // Holds about ~10 seconds of data depending on block size
+    std::array<VisualFrame, bufferSize> visualBuffer;
+    std::atomic<int> writeIndex{ 0 };
 
     // Helper: Setup parameters
     juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout();
