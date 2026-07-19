@@ -9,6 +9,7 @@
 #pragma once
 
 #include <JuceHeader.h>
+#include "SmartGate.h"
 
 class VocalCleanupPluginAudioProcessor  : public juce::AudioProcessor
 {
@@ -51,8 +52,6 @@ public:
     #pragma endregion
 
     // Declare member variables here
-	double currentSampleRate = 44100.0; // Default sample rate, will be updated in prepareToPlay
-
 	float currentGain = 0.0f; // Current gain value, will be updated in processBlock
 
 	// Parameter management
@@ -64,13 +63,13 @@ public:
     std::atomic<bool> isVoiceDetected{ false }; // NOT input parameter - updated in processBlock based on RMS level and threshold comparison
 
     // Active Noise Floor Tracking
-    float currentNoiseFloorDb = -80.0f; // Start very low
+    float currentNoiseFloorDb = 0.0f; // Start very low
     float activeThresholdDb = -80.0f;   // The actual gate threshold
     float thresholdOffsetDb = 12.0f;    // How many dB above the noise floor the gate opens - could be exposed as "sensitivity"?
     float dropTimeSec = 0.05f; // Should drop to find noise quickly
     float climbTimeSec = 3.0f; // Should climb slowly to ignore speech (Asymmetric)
-    float dropCoef = 0.0f; // Updated when sample rate changes
-    float climbCoef = 0.0f; // Updated when sample rate changes
+    float dropCoef = 0.5f; // Updated when sample rate changes
+    float climbCoef = 0.25f; // Updated when sample rate changes
 
     // Visualizer
     // A struct to hold one "pixel column" of data
@@ -89,7 +88,11 @@ public:
     // Helper: Setup parameters
     juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout();
 
+    // Declare Modules
+    SmartGate gate;
+
 private:
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (VocalCleanupPluginAudioProcessor)
 };
+

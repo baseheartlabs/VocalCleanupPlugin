@@ -8,6 +8,7 @@
 
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
+#include "SmartGate.h"
 
 #pragma region Constructor/Destructor
 VocalCleanupPluginAudioProcessor::VocalCleanupPluginAudioProcessor()
@@ -110,13 +111,13 @@ void VocalCleanupPluginAudioProcessor::changeProgramName (int index, const juce:
 
 void VocalCleanupPluginAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
-    currentSampleRate = sampleRate;
-    hangOverDurationSamples = static_cast<int>(sampleRate * 0.1);
+	juce::dsp::ProcessSpec spec;
+	spec.sampleRate = sampleRate;
+    spec.maximumBlockSize = samplesPerBlock;
+	spec.numChannels = getTotalNumOutputChannels();
 
-    // TODO: Gate this to happen only on startup or when sampleRate changes
-    dropCoef = std::exp(-1.0 / (dropTimeSec * sampleRate));
-    climbCoef = std::exp(-1.0 / (climbTimeSec * sampleRate));
-
+    // Prepare each module
+	gate.prepare(spec);
 }
 
 void VocalCleanupPluginAudioProcessor::releaseResources()
@@ -163,80 +164,25 @@ void VocalCleanupPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& b
         buffer.clear(i, 0, buffer.getNumSamples());
 
     // CRITICAL: No memory allocation (new/malloc), no UI calls, and no locks in this method!
+    // AudioBlock is better here since it doesn't allocate or copy
+    juce::dsp::AudioBlock<float> block(buffer);
+    juce::dsp::ProcessContextReplacing<float> context(block);
+    gate.process(context);
 
-    // Get the current signal level of the block
-    float blockRms = buffer.getRMSLevel(0, 0, buffer.getNumSamples());
-    float blockDb = juce::Decibels::gainToDecibels(blockRms, -100.0f); // Floor at -100dB
-
-    if (blockDb < currentNoiseFloorDb)
-    {
-        // Signal is QUIETER than the floor. Drop quickly to track it.
-        // Formula: Output = Input + Coef * (OldOutput - Input)
-        currentNoiseFloorDb = blockDb + dropCoef * (currentNoiseFloorDb - blockDb);
-    }
-    else
-    {
-        // Signal is LOUDER than the floor. Climb very slowly.
-        // This prevents loud speech from pulling the noise floor up instantly.
-        currentNoiseFloorDb = blockDb + climbCoef * (currentNoiseFloorDb - blockDb);
-    }
-
-    // Set the active operational threshold for your VAD
-    activeThresholdDb = currentNoiseFloorDb + thresholdOffsetDb;
-
-    // State Handling
-    if (blockDb > activeThresholdDb) 
-    {
-        isVoiceDetected.store(true);
-        hangOverDurationSamples = static_cast<int>(currentSampleRate * 0.1); // Reset hangover duration
-    }
-    else
-    {
-        if (hangOverDurationSamples > 0)
-        {
-            hangOverDurationSamples = std::max(0, hangOverDurationSamples - buffer.getNumSamples());
-        }
-        else
-        {
-            isVoiceDetected.store(false);
-        }
-    }
-
-    // Live View Support
+    // Visualizer Data Update (thread-safe circular buffer write)
     // Grab the current write position
-        int currentIndex = writeIndex.load();
+    int currentIndex = writeIndex.load();
 
     // Write the frame data
     visualBuffer[currentIndex] = {
-        blockDb,
-        currentNoiseFloorDb,
-        activeThresholdDb,
-        isVoiceDetected // true if signalDb > activeThresholdDb
+        gate.getSignalDb(),
+        gate.getNoiseFloorDb(),
+        gate.getActiveThresholdDb(),
+        gate.isOpen() // true if signalDb > activeThresholdDb
     };
 
-    // 3. Advance the index, wrapping back to 0 if it hits the end
+    // Advance the index, wrapping back to 0 if it hits the end
     writeIndex.store((currentIndex + 1) % bufferSize);
-
-	// Main Audio Processing Loop
-    int numSamples = buffer.getNumSamples();
-	auto* leftChannel = buffer.getWritePointer(0);
-    auto* rightChannel = totalNumInputChannels > 1 ? buffer.getWritePointer(1) : nullptr;
-
-    // Iterate through every sample in the buffer
-    for (int sample = 0; sample < numSamples; sample++)
-    {
-        // Pass through for now
-        leftChannel[sample] = leftChannel[sample];
-
-        rightChannel[sample] = rightChannel[sample];
-    }
-
-    if (!isVoiceDetected.load(std::memory_order_relaxed))
-    {
-        // Simple gate: mute when voice NOT detected
-        buffer.clear();
-    }
-
 }
 
 #pragma endregion
