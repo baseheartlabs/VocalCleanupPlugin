@@ -27,6 +27,14 @@ public:
     void setThresholdOffset(float offsetDb);
     void setHangoverTime(float ms);
 
+    // Experimental detector tuning
+    void setEmaPower(float power);       // exponent applied to |x| in the EMA (2 = mean-square)
+    void setRmsRootPower(float power);   // exponent applied to the smoothed value (0.5 = square root -> RMS)
+    void setDropTime(float seconds);     // noise-floor fall time constant
+    void setClimbTime(float seconds);    // noise-floor rise time constant
+    void setLevelTime(float seconds);    // level-detector averaging time constant (sets levelAlpha)
+    void setDetectorFloor(float db);     // minimum dB reported by the level/floor detector
+
     //==========================================================================
     // Accessors
     float getSignalDb() const;
@@ -52,8 +60,13 @@ private:
     //==========================================================================
     // EMA Vars
     float levelAlpha = 0.0f;          // Computed in prepare from levelTimeSec, smoothing factor (0-1), controls responsiveness
-    float smoothedSquares = 0.0f;     // Holds previous value used to calculate RMS
+    float smoothedSquares = 0.0f;     // Holds previous smoothed value used to calculate the level (mean of |x|^emaPower)
     float levelTimeSec = 0.01f;       // Used along with fs to calculate levelAlpha- here aim for ~10ms averaging window
+
+    // Experimental detector powers (generalized power/root mean)
+    float emaPower = 2.0f;            // Exponent applied to |x| before averaging (2 -> mean-square)
+    float rmsRootPower = 0.5f;        // Exponent applied to the smoothed value (0.5 -> square root, giving RMS)
+    float detectorFloorDb = -100.0f;  // Lower clamp for the dB conversion (detector dynamic range)
 
     //==========================================================================
     // Initialize state (updated per-sample in process)

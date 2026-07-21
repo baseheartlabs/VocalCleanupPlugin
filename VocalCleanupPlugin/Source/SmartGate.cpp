@@ -38,14 +38,14 @@ void SmartGate::process(const juce::dsp::ProcessContextReplacing<float>& context
     // Process each sample individually for sample-accurate gating
     for (int i = 0; i < numSamples; i++)
     {
-        // Update smoothed squares (EMA) for RMS calculation
+        // Update smoothed power (generalized EMA) for level calculation
         float newSample = block.getSample(0, i);
-        float squared = newSample * newSample;
-        smoothedSquares += levelAlpha * (squared - smoothedSquares);
+        float powered = std::pow(std::abs(newSample), emaPower);
+        smoothedSquares += levelAlpha * (powered - smoothedSquares);
 
-        // Compute current RMS in dB
-        float rms = std::sqrt(smoothedSquares);
-        float sampleDb = juce::Decibels::gainToDecibels(rms, -100.0f);
+        // Compute current level in dB (generalized power of the smoothed value)
+        float level = std::pow(smoothedSquares, rmsRootPower);
+        float sampleDb = juce::Decibels::gainToDecibels(level, detectorFloorDb);
 
         // Update noise floor (asymmetric smoothing per sample)
         if (sampleDb < currentNoiseFloorDb)
@@ -79,7 +79,7 @@ void SmartGate::process(const juce::dsp::ProcessContextReplacing<float>& context
     }
 
     // Store final level for visualizer
-    lastBlockDb = juce::Decibels::gainToDecibels(std::sqrt(smoothedSquares), -100.0f);
+    lastBlockDb = juce::Decibels::gainToDecibels(std::pow(smoothedSquares, rmsRootPower), detectorFloorDb);
 }
 
 //==============================================================================
@@ -104,6 +104,40 @@ void SmartGate::setHangoverTime(float ms)
 {
     hangoverTimeMs = ms;
     hangoverDurationSamples = static_cast<int>(sampleRate * ms / 1000.0);
+}
+
+// Experimental detector tuning
+void SmartGate::setEmaPower(float power)
+{
+    emaPower = power;
+}
+
+void SmartGate::setRmsRootPower(float power)
+{
+    rmsRootPower = power;
+}
+
+void SmartGate::setDropTime(float seconds)
+{
+    dropTimeSec = seconds;
+    dropCoef = static_cast<float>(std::exp(-1.0 / (dropTimeSec * sampleRate)));
+}
+
+void SmartGate::setClimbTime(float seconds)
+{
+    climbTimeSec = seconds;
+    climbCoef = static_cast<float>(std::exp(-1.0 / (climbTimeSec * sampleRate)));
+}
+
+void SmartGate::setLevelTime(float seconds)
+{
+    levelTimeSec = seconds;
+    levelAlpha = 1.0f - std::exp(-1.0f / (static_cast<float>(levelTimeSec * sampleRate)));
+}
+
+void SmartGate::setDetectorFloor(float db)
+{
+    detectorFloorDb = db;
 }
 
 //==============================================================================

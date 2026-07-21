@@ -5,7 +5,7 @@
     <PLUGIN name="Audio Input" descriptiveName="" format="Internal" category="I/O devices"
             manufacturer="JUCE" version="1.0" file="" uniqueId="246006c0"
             isInstrument="0" fileTime="0" infoUpdateTime="0" numInputs="0"
-            numOutputs="6" isShell="0" hasARAExtension="0" uid="246006c0"/>
+            numOutputs="2" isShell="0" hasARAExtension="0" uid="246006c0"/>
     <STATE>0.</STATE>
     <LAYOUT>
       <INPUTS>
@@ -39,7 +39,7 @@
     <STATE>0.</STATE>
     <LAYOUT>
       <INPUTS>
-        <BUS index="0" layout="L R C Lfe Ls Rs"/>
+        <BUS index="0" layout="L R"/>
       </INPUTS>
       <OUTPUTS>
         <BUS index="0" layout="disabled"/>
@@ -74,11 +74,11 @@
       </OUTPUTS>
     </LAYOUT>
   </FILTER>
-  <FILTER uid="6" x="0.4469483568075117" y="0.4677914110429448" useARA="0"
-          uiLastX_Normal="-980" uiLastY_Normal="249" uiopen_Normal="1">
+  <FILTER uid="7" x="0.476056338028169" y="0.5874233128834356" useARA="0"
+          uiLastX_Normal="542" uiLastY_Normal="181" uiopen_Normal="1">
     <PLUGIN name="VocalCleanupPlugin" format="VST3" category="Fx" manufacturer="yourcompany"
             version="1.0.0" file="C:\Users\mbase\CareerDevWorkspace\VocalCleanupPlugin\VocalCleanupPlugin\Builds\VisualStudio2022\x64\Debug\VST3\VocalCleanupPlugin.vst3\Contents\x86_64-win\VocalCleanupPlugin.vst3"
-            uniqueId="1aed2ea" isInstrument="0" fileTime="19ece296fb0" infoUpdateTime="19ed210acfd"
+            uniqueId="1aed2ea" isInstrument="0" fileTime="19ed21375ea" infoUpdateTime="19f7bcd53b7"
             numInputs="2" numOutputs="2" isShell="0" hasARAExtension="0"
             uid="e95a7e1f"/>
     <STATE>276.VMjLgrP....O+fWarAhckI2bo8la8HRLt.iHfTlai8FYo41Y8HRUTYTK3HxO9.BOVMEUy.Ea0cVZtMEcgQWY9vSRC8Vav8lak4Fc9DiLy3hUMoFSmg0Pt3hKt7zJlcUXxEDZisVRxH1a3vVX3fjTLQmKogjYTwVXogiQY8FMwjENHIUUTkEUKMCR38TNtHzSVgSLXc1cw.kbUYEVzU0QhU2LC4hKt3hKt3hKt3hKlIUUMQUTPkzUZESQFM1ZQQEV5UjQtDDQlAEMAcEV40zQtDDQ14hK5EjKt3hKt3hKt3hRUACTEEzZh8VVWgkdUYTTmE0UXwyKIMzasA2atUlaz4COuX0TTMCTrU2Yo41TzEFck4C.</STATE>
@@ -91,11 +91,11 @@
       </OUTPUTS>
     </LAYOUT>
   </FILTER>
-  <CONNECTION srcFilter="1" srcChannel="0" dstFilter="6" dstChannel="0"/>
-  <CONNECTION srcFilter="1" srcChannel="1" dstFilter="6" dstChannel="1"/>
+  <CONNECTION srcFilter="1" srcChannel="0" dstFilter="7" dstChannel="0"/>
+  <CONNECTION srcFilter="1" srcChannel="1" dstFilter="7" dstChannel="1"/>
   <CONNECTION srcFilter="2" srcChannel="4096" dstFilter="5" dstChannel="4096"/>
-  <CONNECTION srcFilter="5" srcChannel="0" dstFilter="6" dstChannel="0"/>
-  <CONNECTION srcFilter="5" srcChannel="1" dstFilter="6" dstChannel="1"/>
-  <CONNECTION srcFilter="6" srcChannel="0" dstFilter="3" dstChannel="0"/>
-  <CONNECTION srcFilter="6" srcChannel="1" dstFilter="3" dstChannel="1"/>
+  <CONNECTION srcFilter="5" srcChannel="0" dstFilter="7" dstChannel="0"/>
+  <CONNECTION srcFilter="5" srcChannel="1" dstFilter="7" dstChannel="1"/>
+  <CONNECTION srcFilter="7" srcChannel="0" dstFilter="3" dstChannel="0"/>
+  <CONNECTION srcFilter="7" srcChannel="1" dstFilter="3" dstChannel="1"/>
 </FILTERGRAPH>

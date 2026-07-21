@@ -27,6 +27,10 @@ VocalCleanupPluginAudioProcessor::VocalCleanupPluginAudioProcessor()
 
 parameterManager(*this, nullptr, juce::Identifier("VocalCleanup"), createParameterLayout())
 {
+    // Cache pointers to the read-only meter parameters for fast updates from processBlock
+    meterSignalParam    = dynamic_cast<juce::AudioParameterFloat*>(parameterManager.getParameter("meterSignal"));
+    meterNoiseFloorParam = dynamic_cast<juce::AudioParameterFloat*>(parameterManager.getParameter("meterNoiseFloor"));
+    meterThresholdParam = dynamic_cast<juce::AudioParameterFloat*>(parameterManager.getParameter("meterThreshold"));
 }
 
 
@@ -40,6 +44,65 @@ VocalCleanupPluginAudioProcessor::~VocalCleanupPluginAudioProcessor()
 juce::AudioProcessorValueTreeState::ParameterLayout VocalCleanupPluginAudioProcessor::createParameterLayout()
 {
     std::vector<std::unique_ptr<juce::RangedAudioParameter>> params;
+
+    // Threshold offset (sensitivity): dB above the tracked noise floor
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(
+        "thresholdOffset", "Threshold Offset",
+        juce::NormalisableRange<float>(0.0f, 60.0f, 0.1f), 12.0f));
+
+    // Hangover time: how long the gate stays open after dropping below threshold
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(
+        "hangoverTime", "Hangover Time",
+        juce::NormalisableRange<float>(0.0f, 2000.0f, 1.0f), 100.0f));
+
+    // Noise-floor fall time constant (seconds)
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(
+        "dropTime", "Drop Time",
+        juce::NormalisableRange<float>(0.0005f, 5.0f, 0.0005f, 0.3f), 0.05f));
+
+    // Noise-floor rise time constant (seconds)
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(
+        "climbTime", "Climb Time",
+        juce::NormalisableRange<float>(0.01f, 30.0f, 0.01f, 0.4f), 3.0f));
+
+    // Experimental: exponent applied to |x| in the EMA (2 = mean-square)
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(
+        "emaPower", "EMA Power",
+        juce::NormalisableRange<float>(0.1f, 8.0f, 0.01f), 2.0f));
+
+    // Experimental: exponent applied to the smoothed value (0.5 = square root -> RMS)
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(
+        "rmsRootPower", "RMS Root Power",
+        juce::NormalisableRange<float>(0.05f, 4.0f, 0.01f), 0.5f));
+
+    // Level detector averaging time constant (seconds): how fast the level reading reacts
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(
+        "levelTime", "Level Time",
+        juce::NormalisableRange<float>(0.0005f, 0.5f, 0.0005f, 0.3f), 0.01f));
+
+    // Detector floor (dB): lower clamp / dynamic range of the level & noise-floor detector
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(
+        "detectorFloor", "Detector Floor",
+        juce::NormalisableRange<float>(-140.0f, -40.0f, 1.0f), -100.0f));
+
+    // Read-only meters (host displays these; updated from processBlock)
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(
+        juce::ParameterID{ "meterSignal", 1 }, "Signal (dB)",
+        juce::NormalisableRange<float>(-140.0f, 6.0f, 0.1f), -100.0f,
+        juce::AudioParameterFloatAttributes().withCategory(
+            juce::AudioProcessorParameter::Category::outputMeter)));
+
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(
+        juce::ParameterID{ "meterNoiseFloor", 1 }, "Noise Floor (dB)",
+        juce::NormalisableRange<float>(-140.0f, 6.0f, 0.1f), -100.0f,
+        juce::AudioParameterFloatAttributes().withCategory(
+            juce::AudioProcessorParameter::Category::outputMeter)));
+
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(
+        juce::ParameterID{ "meterThreshold", 1 }, "Threshold (dB)",
+        juce::NormalisableRange<float>(-140.0f, 6.0f, 0.1f), -100.0f,
+        juce::AudioParameterFloatAttributes().withCategory(
+            juce::AudioProcessorParameter::Category::outputMeter)));
 
     return { params.begin(), params.end() };
 }
@@ -163,6 +226,17 @@ void VocalCleanupPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& b
     for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
         buffer.clear(i, 0, buffer.getNumSamples());
 
+    // Pull the latest parameter values from the host and push them into the gate.
+    // Reading atomic parameter values and calling the setters is real-time safe.
+    gate.setThresholdOffset(parameterManager.getRawParameterValue("thresholdOffset")->load());
+    gate.setHangoverTime(parameterManager.getRawParameterValue("hangoverTime")->load());
+    gate.setDropTime(parameterManager.getRawParameterValue("dropTime")->load());
+    gate.setClimbTime(parameterManager.getRawParameterValue("climbTime")->load());
+    gate.setEmaPower(parameterManager.getRawParameterValue("emaPower")->load());
+    gate.setRmsRootPower(parameterManager.getRawParameterValue("rmsRootPower")->load());
+    gate.setLevelTime(parameterManager.getRawParameterValue("levelTime")->load());
+    gate.setDetectorFloor(parameterManager.getRawParameterValue("detectorFloor")->load());
+
     // CRITICAL: No memory allocation (new/malloc), no UI calls, and no locks in this method!
     // AudioBlock is better here since it doesn't allocate or copy
     juce::dsp::AudioBlock<float> block(buffer);
@@ -183,6 +257,11 @@ void VocalCleanupPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& b
 
     // Advance the index, wrapping back to 0 if it hits the end
     writeIndex.store((currentIndex + 1) % bufferSize);
+
+    // Update read-only meters so the host can display the detector state
+    if (meterSignalParam != nullptr)    *meterSignalParam = gate.getSignalDb();
+    if (meterNoiseFloorParam != nullptr) *meterNoiseFloorParam = gate.getNoiseFloorDb();
+    if (meterThresholdParam != nullptr) *meterThresholdParam = gate.getActiveThresholdDb();
 }
 
 #pragma endregion

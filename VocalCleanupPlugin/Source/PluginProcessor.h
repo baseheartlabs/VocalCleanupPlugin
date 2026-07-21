@@ -91,6 +91,11 @@ public:
     // Declare Modules
     SmartGate gate;
 
+    // Cached pointers to read-only meter parameters (updated from processBlock)
+    juce::AudioParameterFloat* meterSignalParam = nullptr;
+    juce::AudioParameterFloat* meterNoiseFloorParam = nullptr;
+    juce::AudioParameterFloat* meterThresholdParam = nullptr;
+
 private:
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (VocalCleanupPluginAudioProcessor)
