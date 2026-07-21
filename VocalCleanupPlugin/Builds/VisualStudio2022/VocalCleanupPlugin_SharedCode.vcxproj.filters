@@ -2,6 +2,9 @@
 
 <Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
+    <Filter Include="VocalCleanupPlugin\Source\Utils">
+      <UniqueIdentifier>{B0534A88-F492-E915-2A7A-EBFA05A03469}</UniqueIdentifier>
+    </Filter>
     <Filter Include="VocalCleanupPlugin\Source">
       <UniqueIdentifier>{E9895B6D-2020-52B6-C0D5-5BCC96987083}</UniqueIdentifier>
     </Filter>
@@ -714,6 +717,12 @@
     </ClCompile>
     <ClCompile Include="..\..\Source\PluginEditor.cpp">
       <Filter>VocalCleanupPlugin\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\SpectralVisualizer.cpp">
+      <Filter>VocalCleanupPlugin\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\Utils\SpectralAnalyzer.cpp">
+      <Filter>VocalCleanupPlugin\Source\Utils</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\..\..\..\..\JUCE\modules\juce_audio_basics\audio_play_head\juce_AudioPlayHead.cpp">
       <Filter>JUCE Modules\juce_audio_basics\audio_play_head</Filter>
@@ -3758,6 +3767,12 @@
     </ClInclude>
     <ClInclude Include="..\..\Source\PluginEditor.h">
       <Filter>VocalCleanupPlugin\Source</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\SpectralVisualizer.h">
+      <Filter>VocalCleanupPlugin\Source</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\Utils\SpectralAnalyzer.h">
+      <Filter>VocalCleanupPlugin\Source\Utils</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\..\..\..\..\JUCE\modules\juce_audio_basics\audio_play_head\juce_AudioPlayHead.h">
       <Filter>JUCE Modules\juce_audio_basics\audio_play_head</Filter>

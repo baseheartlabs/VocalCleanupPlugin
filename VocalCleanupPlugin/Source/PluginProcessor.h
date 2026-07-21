@@ -10,6 +10,7 @@
 
 #include <JuceHeader.h>
 #include "SmartGate.h"
+#include "Utils/SpectralAnalyzer.h"
 
 class VocalCleanupPluginAudioProcessor  : public juce::AudioProcessor
 {
@@ -90,6 +91,9 @@ public:
 
     // Declare Modules
     SmartGate gate;
+
+    // Analysis-only spectrum analyzer (does not modify audio)
+    SpectralAnalyzer spectralAnalyzer;
 
 private:
 

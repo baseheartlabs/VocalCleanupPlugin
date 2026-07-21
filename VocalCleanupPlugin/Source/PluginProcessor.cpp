@@ -163,6 +163,23 @@ void VocalCleanupPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& b
     for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
         buffer.clear(i, 0, buffer.getNumSamples());
 
+    // Spectral analysis (read-only): feed the incoming signal to the analyzer
+    // before any processing so we visualise what actually arrives at the plugin.
+    if (totalNumInputChannels > 0)
+    {
+        const int numSamples = buffer.getNumSamples();
+        const float invChannels = 1.0f / (float)totalNumInputChannels;
+
+        for (int n = 0; n < numSamples; ++n)
+        {
+            float mono = 0.0f;
+            for (int ch = 0; ch < totalNumInputChannels; ++ch)
+                mono += buffer.getSample(ch, n);
+
+            spectralAnalyzer.pushSample(mono * invChannels);
+        }
+    }
+
     // CRITICAL: No memory allocation (new/malloc), no UI calls, and no locks in this method!
     // AudioBlock is better here since it doesn't allocate or copy
     juce::dsp::AudioBlock<float> block(buffer);

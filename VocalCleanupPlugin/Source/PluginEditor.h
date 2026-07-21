@@ -11,6 +11,7 @@
 #include <JuceHeader.h>
 #include "PluginProcessor.h"
 #include "GateVisualizer.h"
+#include "SpectralVisualizer.h"
 
 //==============================================================================
 /**
@@ -55,6 +56,7 @@ public:
     VocalCleanupPluginAudioProcessor& audioProcessor;
 	VADComponent VAD; // Custom component to visualize voice activity detection
     GateVisualizer gateVisualizer{ audioProcessor };
+    SpectralVisualizer spectralVisualizer{ audioProcessor };
 
     juce::AudioProcessorValueTreeState& valueTreeState;
 

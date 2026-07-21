@@ -17,6 +17,16 @@
       <FILE id="MMH3LP" name="PluginEditor.cpp" compile="1" resource="0"
             file="Source/PluginEditor.cpp"/>
       <FILE id="wIP0Z6" name="PluginEditor.h" compile="0" resource="0" file="Source/PluginEditor.h"/>
+      <FILE id="sp01Vz" name="SpectralVisualizer.cpp" compile="1" resource="0"
+            file="Source/SpectralVisualizer.cpp"/>
+      <FILE id="sp02Vh" name="SpectralVisualizer.h" compile="0" resource="0"
+            file="Source/SpectralVisualizer.h"/>
+      <GROUP id="{B1C2D3E4-0000-1111-2222-333344445555}" name="Utils">
+        <FILE id="sp03Ac" name="SpectralAnalyzer.cpp" compile="1" resource="0"
+              file="Source/Utils/SpectralAnalyzer.cpp"/>
+        <FILE id="sp04Ah" name="SpectralAnalyzer.h" compile="0" resource="0"
+              file="Source/Utils/SpectralAnalyzer.h"/>
+      </GROUP>
     </GROUP>
   </MAINGROUP>
   <MODULES>

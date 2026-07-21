@@ -19,8 +19,9 @@ VocalCleanupPluginAudioProcessorEditor::VocalCleanupPluginAudioProcessorEditor (
     startTimerHz(30); // Update display at 30 FPS
 
     addAndMakeVisible(gateVisualizer);
+    addAndMakeVisible(spectralVisualizer);
 
-    setSize (400, 300);
+    setSize (400, 500);
 }
 
 VocalCleanupPluginAudioProcessorEditor::~VocalCleanupPluginAudioProcessorEditor()
@@ -44,8 +45,13 @@ void VocalCleanupPluginAudioProcessorEditor::resized()
     // small VAD box in the top-left
     VAD.setBounds(10, 10, 50, 50);
 
-    // Give the GateVisualizer the remaining area
-    gateVisualizer.setBounds(70, 10, r.getWidth() - 80, r.getHeight() - 20);
+    // Split the remaining area: gate view on top, spectrum analyzer below.
+    auto contentX = 70;
+    auto contentW = r.getWidth() - 80;
+    auto topH = (r.getHeight() - 30) / 2;
+
+    gateVisualizer.setBounds(contentX, 10, contentW, topH);
+    spectralVisualizer.setBounds(contentX, 10 + topH + 10, contentW, r.getHeight() - topH - 30);
 }
 
 //==============================================================================
