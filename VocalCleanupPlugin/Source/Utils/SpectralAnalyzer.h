@@ -23,8 +23,8 @@ public:
     enum
     {
         fftOrder  = 11,
-        fftSize   = 1 << fftOrder,   // 2048
-        scopeSize = 512
+        fftSize   = 1 << fftOrder,   // Trick from JUCE Tutorial, 2048
+		scopeSize = 512              // Num of visual points to draw (must be <= fftSize/2)
     };
 
     SpectralAnalyzer();
@@ -65,5 +65,5 @@ private:
 
     void drawNextFrameOfSpectrum();
 
-    JUCE_LEAK_DETECTOR(SpectralAnalyzer)
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(SpectralAnalyzer)
 };
