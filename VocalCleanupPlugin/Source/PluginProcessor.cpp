@@ -8,7 +8,9 @@
 
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
-#include "SmartGate.h"
+#include "GainProcessors.h"
+#include "Ballistics.h"
+
 
 #pragma region Constructor/Destructor
 VocalCleanupPluginAudioProcessor::VocalCleanupPluginAudioProcessor()
@@ -27,6 +29,11 @@ VocalCleanupPluginAudioProcessor::VocalCleanupPluginAudioProcessor()
 
 parameterManager(*this, nullptr, juce::Identifier("VocalCleanup"), createParameterLayout())
 {
+    stateParam = parameterManager.getRawParameterValue(stateParamID);
+    thresholdParam = parameterManager.getRawParameterValue(thresholdParamID);
+    ratioParam = parameterManager.getRawParameterValue(ratioParamID);
+    attackParam = parameterManager.getRawParameterValue(attackParamID);
+    releaseParam = parameterManager.getRawParameterValue(releaseParamID);
 }
 
 
@@ -40,6 +47,38 @@ VocalCleanupPluginAudioProcessor::~VocalCleanupPluginAudioProcessor()
 juce::AudioProcessorValueTreeState::ParameterLayout VocalCleanupPluginAudioProcessor::createParameterLayout()
 {
     std::vector<std::unique_ptr<juce::RangedAudioParameter>> params;
+
+    // Enum state parameter: current operating state of the plugin (6 selectable states)
+    params.push_back(std::make_unique<juce::AudioParameterChoice>(
+        juce::ParameterID{ stateParamID, 1 },
+        "Plugin State",
+        juce::StringArray{ "Limiter", "Gate", "UpwardCompressor", "DownwardCompressor", "UpwardExpander", "DownwardExpander" },
+        static_cast<int>(PluginState::Limiter)));
+
+    // Threshold (dB): common threshold for all dynamics processors
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(
+        juce::ParameterID{ thresholdParamID, 1 },
+        "Threshold",
+        juce::NormalisableRange<float>(-60.0f, 0.0f, 0.1f), -18.0f));
+
+    // Ratio: common ratio for all dynamics processors
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(
+        juce::ParameterID{ ratioParamID, 1 },
+        "Ratio",
+        juce::NormalisableRange<float>(1.0f, 20.0f, 0.1f),
+        2.0f));
+
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(
+        juce::ParameterID{ attackParamID, 1 },
+        "Attack",
+        juce::NormalisableRange<float>(0.1f, 100.0f, 0.1f, 0.3f),
+        10.0f));
+
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(
+        juce::ParameterID{ releaseParamID, 1 },
+        "Release",
+        juce::NormalisableRange<float>(5.0f, 1000.0f, 1.0f, 0.35f),
+        150.0f));
 
     return { params.begin(), params.end() };
 }
@@ -117,7 +156,7 @@ void VocalCleanupPluginAudioProcessor::prepareToPlay (double sampleRate, int sam
 	spec.numChannels = getTotalNumOutputChannels();
 
     // Prepare each module
-	gate.prepare(spec);
+	gainProcessorModule.prepare(spec);
 }
 
 void VocalCleanupPluginAudioProcessor::releaseResources()
@@ -167,7 +206,16 @@ void VocalCleanupPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& b
     // AudioBlock is better here since it doesn't allocate or copy
     juce::dsp::AudioBlock<float> block(buffer);
     juce::dsp::ProcessContextReplacing<float> context(block);
-    gate.process(context);
+    gainProcessorModule.setMode(static_cast<int>(stateParam->load()));
+    gainProcessorModule.setThreshold(thresholdParam->load());
+    gainProcessorModule.setRatio(ratioParam->load());
+    gainProcessorModule.setAttackTime(attackParam->load());
+    gainProcessorModule.setReleaseTime(releaseParam->load());
+    gainProcessorModule.process(context);
+
+    // Publish the current input level for the GUI gain-curve dot
+    currentInputDb.store(gainProcessorModule.getSignalDb(), std::memory_order_relaxed);
+    currentGainDb.store(gainProcessorModule.getGainDb(), std::memory_order_relaxed);
 
     // Visualizer Data Update (thread-safe circular buffer write)
     // Grab the current write position
@@ -175,10 +223,11 @@ void VocalCleanupPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& b
 
     // Write the frame data
     visualBuffer[currentIndex] = {
-        gate.getSignalDb(),
-        gate.getNoiseFloorDb(),
-        gate.getActiveThresholdDb(),
-        gate.isOpen() // true if signalDb > activeThresholdDb
+        gainProcessorModule.getSignalDb(),
+        gainProcessorModule.getNoiseFloorDb(),
+        gainProcessorModule.getActiveThresholdDb(),
+        gainProcessorModule.getRatio(),
+        gainProcessorModule.isOpen() // true if signalDb > activeThresholdDb
     };
 
     // Advance the index, wrapping back to 0 if it hits the end

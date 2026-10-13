@@ -703,7 +703,10 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\Source\SmartGate.cpp">
+    <ClCompile Include="..\..\Source\Ballistics.cpp">
+      <Filter>VocalCleanupPlugin\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\GainProcessors.cpp">
       <Filter>VocalCleanupPlugin\Source</Filter>
     </ClCompile>
     <ClCompile Include="..\..\Source\GateVisualizer.cpp">
@@ -3747,7 +3750,10 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\Source\SmartGate.h">
+    <ClInclude Include="..\..\Source\Ballistics.h">
+      <Filter>VocalCleanupPlugin\Source</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\GainProcessors.h">
       <Filter>VocalCleanupPlugin\Source</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Source\GateVisualizer.h">

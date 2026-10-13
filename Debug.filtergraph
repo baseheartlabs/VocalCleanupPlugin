@@ -74,14 +74,14 @@
       </OUTPUTS>
     </LAYOUT>
   </FILTER>
-  <FILTER uid="6" x="0.4469483568075117" y="0.4677914110429448" useARA="0"
-          uiLastX_Normal="-980" uiLastY_Normal="249" uiopen_Normal="1">
+  <FILTER uid="7" x="0.4169014084507042" y="0.504601226993865" useARA="0"
+          uiLastX_Normal="1441" uiLastY_Normal="244" uiopen_Normal="0">
     <PLUGIN name="VocalCleanupPlugin" format="VST3" category="Fx" manufacturer="yourcompany"
             version="1.0.0" file="C:\Users\mbase\CareerDevWorkspace\VocalCleanupPlugin\VocalCleanupPlugin\Builds\VisualStudio2022\x64\Debug\VST3\VocalCleanupPlugin.vst3\Contents\x86_64-win\VocalCleanupPlugin.vst3"
-            uniqueId="1aed2ea" isInstrument="0" fileTime="19ece296fb0" infoUpdateTime="19ed210acfd"
+            uniqueId="1aed2ea" isInstrument="0" fileTime="1a07ec542e0" infoUpdateTime="1a07eca928e"
             numInputs="2" numOutputs="2" isShell="0" hasARAExtension="0"
             uid="e95a7e1f"/>
-    <STATE>276.VMjLgrP....O+fWarAhckI2bo8la8HRLt.iHfTlai8FYo41Y8HRUTYTK3HxO9.BOVMEUy.Ea0cVZtMEcgQWY9vSRC8Vav8lak4Fc9DiLy3hUMoFSmg0Pt3hKt7zJlcUXxEDZisVRxH1a3vVX3fjTLQmKogjYTwVXogiQY8FMwjENHIUUTkEUKMCR38TNtHzSVgSLXc1cw.kbUYEVzU0QhU2LC4hKt3hKt3hKt3hKlIUUMQUTPkzUZESQFM1ZQQEV5UjQtDDQlAEMAcEV40zQtDDQ14hK5EjKt3hKt3hKt3hRUACTEEzZh8VVWgkdUYTTmE0UXwyKIMzasA2atUlaz4COuX0TTMCTrU2Yo41TzEFck4C.</STATE>
+    <STATE>559.VMjLgXh....O+fWarAhckI2bo8la8HRLt.iHfTlai8FYo41Y8HRUTYTK3HxO9.BOVMEUy.Ea0cVZtMEcgQWY9vSRC8Vav8lak4Fc9LyL03hUMoFSm4FTt3hKt7zJlcUXxEDZisVRxH1a3vVX3fjTLQmKogjYTwVXogiQY8FMwjENHIUUTkEUKMCR38TNtHzSVgSLXc1cw.kbUYEVzU0QhkicCQUPIUETMEjTZoFLogzYQczXm0TLZglKnM1Y2Y0XqASZHQyLBwjctLDS14xTNACSo0jLPkGS2gUZHU2LC8DTEoFUAACQH8VTV8DZtbTXvLlUZQWSEM1YQcUVn4BZic1cVM1ZvjFR1MiPLg1Mn8zMtTETRUDUSYlZFkENHglXmE0UZUWRBgTLEYTXvTkUOgFUosDLHg2R4X2PTETRUAUSAIkVpASZHgWUFE1ZEEiXqkjPHESQFEFLUY0SnwTZLQmKogTcyLzSPUjZTEDLDgzaQY0SnA0QZgWUwHla3XTXpkjPHESQFEFLUY0SnoGdLY2LRwDMpMkSzX1PNACUS0DMtLjS3gDdKkic4sjU3DCVmcWLPIWUVgEcUcjX43hKt3hKt3hKt3hKt3FUUMTUDQEdqw1XmE0UYQTQFM1YAAkKAgDUjYWQwHVdAAkKAwjKtLlKt3hKt3hKt3hYRUUSTEETIckVwTjQisVTTgkdEYDOujzPu0Fbu4VYtQmO77hUSQ0LPwVcmklaSQWXzUlO..</STATE>
     <LAYOUT>
       <INPUTS>
         <BUS index="0" layout="L R"/>
@@ -91,11 +91,9 @@
       </OUTPUTS>
     </LAYOUT>
   </FILTER>
-  <CONNECTION srcFilter="1" srcChannel="0" dstFilter="6" dstChannel="0"/>
-  <CONNECTION srcFilter="1" srcChannel="1" dstFilter="6" dstChannel="1"/>
   <CONNECTION srcFilter="2" srcChannel="4096" dstFilter="5" dstChannel="4096"/>
-  <CONNECTION srcFilter="5" srcChannel="0" dstFilter="6" dstChannel="0"/>
-  <CONNECTION srcFilter="5" srcChannel="1" dstFilter="6" dstChannel="1"/>
-  <CONNECTION srcFilter="6" srcChannel="0" dstFilter="3" dstChannel="0"/>
-  <CONNECTION srcFilter="6" srcChannel="1" dstFilter="3" dstChannel="1"/>
+  <CONNECTION srcFilter="5" srcChannel="0" dstFilter="7" dstChannel="0"/>
+  <CONNECTION srcFilter="5" srcChannel="1" dstFilter="7" dstChannel="1"/>
+  <CONNECTION srcFilter="7" srcChannel="0" dstFilter="3" dstChannel="0"/>
+  <CONNECTION srcFilter="7" srcChannel="1" dstFilter="3" dstChannel="1"/>
 </FILTERGRAPH>

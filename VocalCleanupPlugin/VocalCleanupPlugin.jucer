@@ -4,8 +4,12 @@
               useAppConfig="0" addUsingNamespaceToJuceHeader="0" jucerFormatVersion="1">
   <MAINGROUP id="sdIcds" name="VocalCleanupPlugin">
     <GROUP id="{2A08A52F-1AFE-EE9A-B9B5-6D06265A7A1F}" name="Source">
-      <FILE id="imnxVd" name="SmartGate.cpp" compile="1" resource="0" file="Source/SmartGate.cpp"/>
-      <FILE id="M6bgWW" name="SmartGate.h" compile="0" resource="0" file="Source/SmartGate.h"/>
+      <FILE id="tP7Iqb" name="Ballistics.cpp" compile="1" resource="0" file="Source/Ballistics.cpp"/>
+      <FILE id="wWEe6d" name="Ballistics.h" compile="0" resource="0" file="Source/Ballistics.h"/>
+      <FILE id="imnxVd" name="GainProcessors.cpp" compile="1" resource="0"
+            file="Source/GainProcessors.cpp"/>
+      <FILE id="M6bgWW" name="GainProcessors.h" compile="0" resource="0"
+            file="Source/GainProcessors.h"/>
       <FILE id="xGK4no" name="GateVisualizer.cpp" compile="1" resource="0"
             file="Source/GateVisualizer.cpp"/>
       <FILE id="U7AiJ3" name="GateVisualizer.h" compile="0" resource="0"

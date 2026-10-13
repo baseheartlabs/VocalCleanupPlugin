@@ -144,7 +144,8 @@
     </Bscmake>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\Source\SmartGate.cpp"/>
+    <ClCompile Include="..\..\Source\Ballistics.cpp"/>
+    <ClCompile Include="..\..\Source\GainProcessors.cpp"/>
     <ClCompile Include="..\..\Source\GateVisualizer.cpp"/>
     <ClCompile Include="..\..\Source\PluginProcessor.cpp"/>
     <ClCompile Include="..\..\Source\PluginEditor.cpp"/>
@@ -2999,7 +3000,8 @@
     <ClCompile Include="..\..\JuceLibraryCode\include_juce_gui_extra.cpp"/>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\Source\SmartGate.h"/>
+    <ClInclude Include="..\..\Source\Ballistics.h"/>
+    <ClInclude Include="..\..\Source\GainProcessors.h"/>
     <ClInclude Include="..\..\Source\GateVisualizer.h"/>
     <ClInclude Include="..\..\Source\PluginProcessor.h"/>
     <ClInclude Include="..\..\Source\PluginEditor.h"/>

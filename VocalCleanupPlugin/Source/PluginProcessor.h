@@ -9,11 +9,38 @@
 #pragma once
 
 #include <JuceHeader.h>
-#include "SmartGate.h"
+#include "GainProcessors.h"
+#include "Ballistics.h"
+
 
 class VocalCleanupPluginAudioProcessor  : public juce::AudioProcessor
 {
 public:
+    // Overall operating state of the plugin (not yet exposed in the GUI)
+    enum class PluginState
+    {
+        Limiter = 0,
+        Gate,
+        UpwardCompressor,
+        DownwardCompressor,
+        UpwardExpander,
+        DownwardExpander,
+        NumStates
+    };
+
+    // Parameter identifier for the plugin state choice parameter
+    static constexpr const char* stateParamID = "pluginState";
+
+    // Parameter identifier for the dynamics threshold (dB)
+    static constexpr const char* thresholdParamID = "threshold";
+
+    // Parameter identifier for the dynamics ratio
+    static constexpr const char* ratioParamID = "ratio";
+
+    // Parameter identifiers for ballistics times in milliseconds
+    static constexpr const char* attackParamID = "attack";
+    static constexpr const char* releaseParamID = "release";
+
     VocalCleanupPluginAudioProcessor();
     ~VocalCleanupPluginAudioProcessor() override;
 
@@ -57,10 +84,29 @@ public:
 	// Parameter management
     juce::AudioProcessorValueTreeState parameterManager; // Manages parameters
 
+    // Cached raw pointer to the plugin state parameter (atomic read is real-time safe)
+    std::atomic<float>* stateParam = nullptr;
+
+    // Cached raw pointer to the dynamics threshold parameter in dB (atomic read is real-time safe)
+    std::atomic<float>* thresholdParam = nullptr;
+
+    // Cached raw pointer to the dynamics ratio parameter (atomic read is real-time safe)
+    std::atomic<float>* ratioParam = nullptr;
+
+    // Cached raw pointers to the ballistics parameters (atomic read is real-time safe)
+    std::atomic<float>* attackParam = nullptr;
+    std::atomic<float>* releaseParam = nullptr;
+
 	// Parameters not exposed for tuning 
 	int hangOverDurationSamples = static_cast<int>(44100.0 * 0.1); // Duration of hangover in samples (e.g., 100ms at 44.1kHz = 4410 samples)
 
     std::atomic<bool> isVoiceDetected{ false }; // NOT input parameter - updated in processBlock based on RMS level and threshold comparison
+
+    // Current input level in dB (updated per block) - read by the GUI to place the live dot on the gain curve
+    std::atomic<float> currentInputDb{ -100.0f };
+
+    // Current applied gain in dB after attack/release smoothing
+    std::atomic<float> currentGainDb{ 0.0f };
 
     // Active Noise Floor Tracking
     float currentNoiseFloorDb = 0.0f; // Start very low
@@ -77,6 +123,7 @@ public:
         float signalDb;
         float noiseFloorDb;
         float activeThresholdDb;
+        float ratio;
         bool isGateOpen;
     };
 
@@ -89,7 +136,7 @@ public:
     juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout();
 
     // Declare Modules
-    SmartGate gate;
+    GainProcessors gainProcessorModule;
 
 private:
 
